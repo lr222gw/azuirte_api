@@ -11,3 +11,12 @@
 
 **D**elete Entry: 
 > Delete a Entry with the PartitionKey and RowKey
+
+
+## Setup Azurite Container: 
+
+Start Docker Desktop, run the following commands: 
+> `docker pull mcr.microsoft.com/azure-storage/azurite`
+> `docker run -p 10000:10000 -p 10001:10001 -p 10002:10002 mcr.microsoft.com/azure-storage/azurite`
+
+The created Azuirte container can be inspected in Docker Desktop under Containers 
