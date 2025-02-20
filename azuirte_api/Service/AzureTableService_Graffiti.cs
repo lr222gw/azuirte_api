@@ -20,14 +20,14 @@ namespace azuirte_api.Service
         public async Task<Graffiti_TE> Create(Graffiti entry)
         {
             var gte = new Graffiti_TE(entry);
-            _Graffitis_client.AddEntity(gte);
+            await _Graffitis_client.AddEntityAsync(gte);
             return gte;
         }
 
         public async Task<Graffiti_TE> Delete(string PartitionKey, string RowKey)
         {
             var entry = await _GetEntry(PartitionKey, RowKey);
-            _Graffitis_client.DeleteEntity(entry);
+            await _Graffitis_client.DeleteEntityAsync(entry);
             return entry;
         }
 
@@ -35,24 +35,32 @@ namespace azuirte_api.Service
         {
             Graffiti_TE entity = await _GetEntry(PartitionKey, RowKey);
             entity.Update(updatedEntry);
-            _Graffitis_client.UpdateEntity(entity, entity.ETag);
+            await _Graffitis_client.UpdateEntityAsync(entity, entity.ETag);
 
             return entity;
         }
 
         private async Task<Graffiti_TE> _GetEntry(string PartitionKey, string RowKey)
         {
-            var results = _Graffitis_client.Query<Graffiti_TE>(x => x.PartitionKey == PartitionKey && x.RowKey == RowKey).ToList();
-            if (results.Count == 0 || results.Count > 1)
+            var results = _Graffitis_client.QueryAsync<Graffiti_TE>(x => x.PartitionKey == PartitionKey && x.RowKey == RowKey);
+            List<Graffiti_TE> resultList = new(); 
+            await foreach (var r in results)
+                resultList.Add(r);
+            
+            if (resultList.Count == 0 || resultList.Count > 1)
                 throw new Exception("Oh no");
-            var entity = results[0];
+            var entity = resultList[0];
             return entity;
         }
 
         public async Task<List<Graffiti_TE>> GetAll()
         {
-            var all = _Graffitis_client.Query<Graffiti_TE>();
-            var allst = all.ToList(); // Tables to list 
+            var all = _Graffitis_client.QueryAsync<Graffiti_TE>();
+            List<Graffiti_TE> allst = new();
+            await foreach (var a in all)
+            {
+                allst.Add(a);
+            }
 
             return allst;
 
