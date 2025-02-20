@@ -19,7 +19,7 @@ namespace azuirte_api.Endpoints
 
         private static async Task<IResult> EditPost(HttpContext context, string id, string id2)
         {
-            TableServiceClient tableClient = new TableServiceClient("UseDevelopmentStorage=true");
+            TableServiceClient tableClient = new TableServiceClient("UseDevelopmentStorage=true"); 
 
             var tbc = tableClient.GetTableClient("Graffitis");
             var all = tbc.Query<Graffiti>();
