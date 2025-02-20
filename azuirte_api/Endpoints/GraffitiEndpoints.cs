@@ -27,7 +27,7 @@ namespace azuirte_api.Endpoints
             return TypedResults.Ok(new VIEW_Graffiti(ret));
         }
 
-        private static async Task<IResult> EditPost(HttpContext context, ITableService<Graffiti_TE, Graffiti> service, string PartitionKey, string RowKey, POST_Graffiti dto)
+        private static async Task<IResult> EditPost(HttpContext context, ITableService<Graffiti_TE, Graffiti> service, string PartitionKey, string RowKey, PUT_Graffiti dto)
         {
 
             var ret = await service.Edit(PartitionKey, RowKey, dto.toModel());
