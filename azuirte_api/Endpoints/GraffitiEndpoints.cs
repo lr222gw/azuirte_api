@@ -1,4 +1,7 @@
-﻿using azuirte_api.Models;
+﻿using azuirte_api.DTO;
+using azuirte_api.Models;
+using azuirte_api.Models.TableEntities;
+using azuirte_api.Service.Interface;
 using Azure.Data.Tables;
 using Azure.Data.Tables.Models;
 
@@ -12,64 +15,36 @@ namespace azuirte_api.Endpoints
         static public void Configure_GraffitiEndpoints(this WebApplication app)
         {
             var graffiti = app.MapGroup("/");
-            graffiti.MapGet("/", (Delegate)GetAll);     // Casting to Delegate makes the Endpoints show up in Swagger! 
+            graffiti.MapGet("/", (Delegate)GetAll);     // Casting to Delegate makes the Endpoints show up in Swagger! (If they don't have any arguments)
             graffiti.MapPost("/", (Delegate)AddPost);   // Otherwise we need to add arguments to the endpoint functions...
-            graffiti.MapPut("/{id}&{id2}", (Delegate)EditPost);   // Otherwise we need to add arguments to the endpoint functions...
+            graffiti.MapPut("/{PartitionKey}&{RowKey}", (Delegate)EditPost);   // Otherwise we need to add arguments to the endpoint functions...
+            graffiti.MapDelete("/{PartitionKey}&{RowKey}", (Delegate)DeletePost);   // Otherwise we need to add arguments to the endpoint functions...
         }
 
-        private static async Task<IResult> EditPost(HttpContext context, string id, string id2)
+        private static async Task<IResult> DeletePost(HttpContext context, ITableService<Graffiti_TE, Graffiti> service, string PartitionKey, string RowKey)
         {
-            TableServiceClient tableClient = new TableServiceClient("UseDevelopmentStorage=true"); 
-
-            var tbc = tableClient.GetTableClient("Graffitis");
-            var all = tbc.Query<Graffiti>();
-            var alllist = all.ToList(); // Tables to list 
-
-
-            return TypedResults.Ok(alllist.Select(x => new VIEW_Graffiti(x)).ToList());
+            var ret = await service.Delete(PartitionKey, RowKey); 
+            return TypedResults.Ok(new VIEW_Graffiti(ret));
         }
 
-        private static async Task<IResult> AddPost(HttpContext context, POST_Graffiti dto )
+        private static async Task<IResult> EditPost(HttpContext context, ITableService<Graffiti_TE, Graffiti> service, string PartitionKey, string RowKey, POST_Graffiti dto)
         {
-            TableClient client = new TableClient("UseDevelopmentStorage=true", "Graffitis");
-            TableItem table = client.CreateIfNotExists();
 
-            Console.WriteLine($"The table's name is {table.Name}.");
-
-            Graffiti graf = new Graffiti() { Author = dto.Author, Message = dto.Message };
-
-            //create a TableEntity passing in the PartitionKey and RowIndex
-            string rowKey = Guid.NewGuid().ToString("N"); //generating a new guid each time prevents a duplicate key when re running this code
-            string partitionKey = "General";
-
-            
-            var grafEntity = new TableEntity(partitionKey, rowKey)
-            {
-                { nameof(graf.Author) ,graf.Author },
-                { nameof(graf.Message) ,graf.Message},                
-
-            };
-
-
-            Console.WriteLine($"{grafEntity.RowKey}: {grafEntity["Author"]} {grafEntity["Message"]}");
-
-            //add to our Azure table so now we have four columns in our table, the PartitionKey, RowIndex, Make, Model
-            client.AddEntity(grafEntity);
-
-            return TypedResults.Ok("");
+            var ret = await service.Edit(PartitionKey, RowKey, dto.toModel());
+            return TypedResults.Ok(new VIEW_Graffiti(ret));
         }
 
-        private static async Task<IResult> GetAll(HttpContext context)
+        private static async Task<IResult> AddPost(HttpContext context, ITableService<Graffiti_TE, Graffiti> service, POST_Graffiti dto )
         {
+            var te = await service.Create(dto.toModel());
+            var ret = new VIEW_Graffiti(te);
 
-            TableServiceClient tableClient = new TableServiceClient("UseDevelopmentStorage=true");
+            return TypedResults.Ok(ret);
+        }
 
-            var tbc = tableClient.GetTableClient("Graffitis");
-            var all = tbc.Query<Graffiti>();
-            var alllist = all.ToList(); // Tables to list 
-
-            
-            return TypedResults.Ok(alllist.Select(x => new VIEW_Graffiti(x)).ToList());
+        private static async Task<IResult> GetAll(HttpContext context, ITableService<Graffiti_TE, Graffiti> service)
+        {
+            return TypedResults.Ok((await service.GetAll()).Select(x => new VIEW_Graffiti(x)).ToList());
         }
     }
 }
